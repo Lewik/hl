@@ -4,66 +4,109 @@
  * User: Lewik (lllewik at gmail dot com)
  */
 
-class ___hlMainClass
-{ //u can rename it, use search to find
+class hl
+{ //u can rename it
+	protected static $prevTimer = false;
+	protected static $prevLabel = false;
+	protected static $minDelta = 0;
 
-	protected static $instance;
+	protected static $executionsRemain = 10000000000;
+	protected static $logFile = 'hl_log.html';
+	protected static $top = 0;
+	protected static $topStep = 20;
+	protected static $z_indexMin = 10000;
+	protected static $z_indexMax = 11000;
+	protected static $options = array();
+	protected static $data;
+	protected static $firstStart = true;
 
-
-	public $executionsRemain = 10;
-	public $logFile = 'hl_log.html';
-	private $top = 0;
-	private $topStep = 20;
-	private $z_indexMin = 10000;
-	private $z_indexMax = 11000;
-	private $options = array();
-	private $data;
-
-
-	private function __construct()
+	public static function tic($label = null, $minDelta = null, $debug_backtrace)
 	{
-		if (file_exists($this->logFile)) {
-			unlink($this->logFile);
+		$d_back = $debug_backtrace[0];
+		$backTraceLabel = ' <small>(' . basename($d_back['file']) . ':' . $d_back['line'] . ')</small>';
+		$return = null;
+		if ($minDelta !== null && $minDelta != static::$minDelta) {
+			static::$minDelta = $minDelta;
+			echo '<small>hl timer minimum delta set at</small> ' . static::$minDelta . '<small>secs</small>' . $backTraceLabel . '<br>';
 		}
-		/* ... @return Singleton */
-	}
 
-	private function __clone()
-	{ /* ... @return Singleton */
-	}
+		if (static::$prevTimer === false) {
+			static::$prevTimer = microtime(true);
+			static::$prevLabel = ($label === null) ? '' : (string)$label;
+			echo '<small>hl timer start at label</small> ' . static::$prevLabel . $backTraceLabel . '<br>';
+			$return = 'start';
+		} else {
+			$prevTime = static::$prevTimer;
+			$prevLabel = static::$prevLabel;
+			$currentTime = microtime(true);
+			$currentLabel = ($label === null) ? '' : (string)$label;
+			$currentLabel = $currentLabel . $backTraceLabel;
 
-	private function __wakeup()
-	{ /* ... @return Singleton */
-	}
-
-	public static function get() {
-		if ( is_null(self::$instance) ) {
-			self::$instance = new ___hlMainClass ();
+			$realDelta = $currentTime - $prevTime;
+			$delta = round($realDelta, 4);
+			if ($realDelta >= static::$minDelta) {
+				echo '<span style="white-space: nowrap">' . $prevLabel . ' &rarr; <b>' . $delta . '</b><small>secs</small> &rarr; ' . $currentLabel . '</span><br>';
+			}
+			static::$prevTimer = $currentTime;
+			static::$prevLabel = $currentLabel;
+			$return = $realDelta;
 		}
-		return self::$instance;
+		return $return;
 	}
 
-
-	public function hl($data, $debug_backtrace)
+	protected static function initFile()
 	{
-		$this->data = $data;
-		if ($this->executionsRemain == 0) {
+		if (file_exists(static::$logFile)) {
+			unlink(static::$logFile);
+		}
+	}
+
+	public static function say($data, $debug_backtrace)
+	{
+		if (static::$firstStart) {
+			static::initFile();
+		}
+		static::$data = $data;
+		if (static::$executionsRemain == 0) {
 			return false;
 		}
-		$this->executionsRemain--;
+		static::$executionsRemain--;
 
-		$this->setOptions();
+
+		static::setOptions();
 
 		$d_back = $debug_backtrace[0];
 		$d_backCall = $debug_backtrace[1];
-		$this->top = $this->top + $this->topStep;
-		$htmlTemplate = $this->getHtmlTemplate();
+		static::$top = static::$top + static::$topStep;
+		$htmlTemplate = static::getHtmlTemplate(!static::$options['f']);
 		$jsTemplate = '
             <script type="text/javascript">
             console.log("hl message: file(line): {file}({line}) call: {call} ({callType}). Value below");
             console.log(" { jsValue} ");
             </script>
     ';
+		if (static::$firstStart) {
+			$autoUpdate = '
+				<span style="position: fixed; right: 0; background-color: gray;z-index:11100; border: 2px solid black;padding: 3px; font-weight: bold; color: white">
+					<span id="timer"></span>
+					<input type="checkbox" id="autoUpdateDisable"/>
+				</span>
+				<script type="text/javascript">
+						var timerI = 2;
+						function reset() {
+							if(!document.getElementById("autoUpdateDisable").checked){
+								timerI = timerI - 1;
+							}
+						    if (timerI >= 0) document.getElementById("timer").innerText = timerI;
+						    if (timerI == 0) window.location.replace(window.location);
+						}
+						setInterval("reset();", 1000);
+				</script>
+			';
+		} else {
+			$autoUpdate = '';
+		}
+
 		$fileTemplate = '
                     <html>
                         <head>
@@ -72,7 +115,9 @@ class ___hlMainClass
                             </title>
                         </head>
                         <body>
-                            {html}
+							' . $autoUpdate . '
+
+							{html}
                         </body>
                     </html>
     ';
@@ -86,21 +131,22 @@ class ___hlMainClass
 			'{jsValue}',
 		);
 
-		if (count($this->data) == 0) {
-			$this->data[] = 'Executed';
+		if (count(static::$data) == 0) {
+			static::$data[] = 'Executed';
 		}
 
-		if ($this->executionsRemain == 0) {
-			$this->data[] = 'Last execution';
+		if (static::$executionsRemain == 0) {
+			static::$data[] = 'Last execution';
 		}
 
-		foreach ($this->data as $value) {
+		foreach (static::$data as $value) {
 			ob_start();
 			var_dump($value);
 			$buffer = ob_get_contents();
 			ob_end_clean();
 
-			$valueToDisplay = htmlspecialchars($buffer, ENT_QUOTES);
+
+			$valueToDisplay = static::isNoPre() ? $buffer : htmlspecialchars($buffer, ENT_QUOTES);
 			$valueToConsole = str_replace('"', '\"', $buffer);
 
 			if (isset($d_backCall['type'])) {
@@ -140,37 +186,47 @@ class ___hlMainClass
 			$file = str_replace('{html}', $html, $fileTemplate);
 
 
-			if ($this->options['h']) {
+			if (static::$options['h']) {
 				echo $html;
 			}
-			if ($this->options['j']) {
+			if (static::$options['j']) {
 				echo $js;
 			}
-			if ($this->options['f']) {
-				if (!file_exists($this->logFile)) {
-					$res = @file_put_contents($this->logFile, "");
+			if (static::$options['f']) {
+				if (!file_exists(static::$logFile)) {
+					$res = @file_put_contents(static::$logFile, "");
 					if ($res === false) {
-						$this->hlError('hl can\'t create hl_log.php');
+						static::hlError('hl can\'t create hl_log.php');
 					}
 				}
 
-				@file_put_contents($this->logFile, file_get_contents($this->logFile) . $file);
+				@file_put_contents(static::$logFile, file_get_contents(static::$logFile) . $file);
 			}
 
 
 		}
+		static::$firstStart = false;
 		return true;
 	}
 
-	private function hlError($text)
+	protected static function hlError($text)
 	{
 
 	}
 
-	private function getHtmlTemplate($hlError = false)
+	protected static function getHtmlTemplate($isFixed = true)
 	{
-		$uid = $this->executionsRemain;
-		$additionalCss = $hlError ? 'float:left;' : '';
+		$uid = static::$executionsRemain;
+		if ($isFixed) {
+			$fixedCss = '
+					position: fixed;
+                    z-index: ' . static::$z_indexMax . ';
+                    left: 0;
+                    top: 0;
+        ';
+		} else {
+			$fixedCss = '';
+		}
 		return '
             <style type="text/css">
                 .mblhlMain{
@@ -178,16 +234,12 @@ class ___hlMainClass
                     border: dashed 2px grey;
                     font-size: 12px;
                     font-family: consolas;
-                    position: fixed;
-                    z-index: ' . $this->z_indexMax . ';
-                    left: 0;
-                    top: 0;
+                    ' . $fixedCss . '
                     max-height: 800px;
                     max-width: 1000px;
                     min-height: 20px;
                     min-width: 149px;
                     overflow: auto;
-                    ' . $additionalCss . '
                 }
 
 
@@ -212,11 +264,12 @@ class ___hlMainClass
             </style>
 
 
-            <div class="mblhlMain" id="___mblHlDebugDiv_' . $uid . '" style="top:' . $this->top . 'px">
+            <div class="mblhlMain" id="___mblHlDebugDiv_' . $uid . '" style="top:' . static::$top . 'px">
                 <div class="mblhlLabel">
                     hl
                     <span onclick="___mblHlToggle_' . $uid . '()" class="mblhlMinimize">Minimize</span>
                     <span onclick="___mblHlClose_' . $uid . '()" class="mblhlClose">Close</span>
+                    <span class="mblhlTime">' . mktime() . '</span>
                 </div>
                 <div id="___mblHlDebugBody_' . $uid . '">
                     <div class="mblhlBodyHead">
@@ -232,7 +285,7 @@ class ___hlMainClass
                     <hr class="mblhlHr"/>
 
                     <div class="mblhlContent">
-                        <pre style="font-family: consolas">{value}</pre>
+                        ' . (static::isNoPre() ? '{value}' : '<pre style="font-family: consolas">{value}</pre>') . '
                     </div>
                 </div>
             </div>
@@ -244,45 +297,39 @@ class ___hlMainClass
                 function ___mblHlToggle_' . $uid . '(){
                     if(document.getElementById("___mblHlDebugBody_' . $uid . '").style.display){
                         document.getElementById("___mblHlDebugBody_' . $uid . '").style.display = "";
-                        document.getElementById("___mblHlDebugDiv_' . $uid . '").style.zIndex="' . $this->z_indexMax . '";
+                        document.getElementById("___mblHlDebugDiv_' . $uid . '").style.zIndex="' . static::$z_indexMax . '";
                     } else {
                         document.getElementById("___mblHlDebugBody_' . $uid . '").style.display = "none";
-                        document.getElementById("___mblHlDebugDiv_' . $uid . '").style.zIndex="' . $this->z_indexMin . '";
+                        document.getElementById("___mblHlDebugDiv_' . $uid . '").style.zIndex="' . static::$z_indexMin . '";
                     }
                 }
-                ___mblHlToggle_' . ($uid + 1) . '()
             </script>
     ';
 	}
 
-	private function setOptions(){
-		$this->options['h'] = TRUE;
-		$this->options['j'] = TRUE;
-		$this->options['f'] = TRUE;
+	protected static function setOptions()
+	{
+		static::$options['h'] = TRUE;
+		static::$options['j'] = TRUE;
+		static::$options['f'] = TRUE;
 
 		$optionFlag = '--';
 
 
-		if (is_string($this->data[0]) and substr($this->data[0], 0, 2) == $optionFlag) {
-			$selectedOptions = $this->data[0];
-			unset($this->data[0]);
+		if (is_string(static::$data[0]) and substr(static::$data[0], 0, 2) == $optionFlag) {
+			$selectedOptions = static::$data[0];
+			unset(static::$data[0]);
 			$selectedOptions = str_replace($optionFlag, '', $selectedOptions);
 			$selectedOptions = explode(' ', $selectedOptions);
-			foreach ($this->options as $key => $enable) {
-				$this->options[$key] = !!in_array($key, $selectedOptions);
+			foreach (static::$options as $key => $enable) {
+				static::$options[$key] = !!in_array($key, $selectedOptions);
 			}
 		}
 	}
 
-}
+	protected static function isNoPre()
+	{
+		return false; //ini_get('xdebug.profiler_enable') !== '';
+	}
 
-function hl() //u can rename it
-{
-	___hlMainClass::get()->hl(func_get_args(), debug_backtrace());
-}
-
-function dhl() //u can rename it
-{
-	___hlMainClass::get()->hl(func_get_args(), debug_backtrace());
-	die();
 }
