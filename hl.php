@@ -10,6 +10,7 @@ class hl
 	protected static $prevLabel = false;
 	protected static $minDelta = 0;
 
+	protected static $useAutoUpdate = 0;
 	protected static $executionsRemain = 10000000000;
 	protected static $logFile = 'hl_log.html';
 	protected static $top = 0;
@@ -85,7 +86,7 @@ class hl
             console.log(" { jsValue} ");
             </script>
     ';
-		if (static::$firstStart) {
+		if (static::$useAutoUpdate && static::$firstStart) {
 			$autoUpdate = '
 				<span style="position: fixed; right: 0; background-color: gray;z-index:11100; border: 2px solid black;padding: 3px; font-weight: bold; color: white">
 					<span id="timer"></span>
