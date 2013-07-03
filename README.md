@@ -20,3 +20,6 @@ Also hl-class writes hl_log.html, so you can debug even you have no access to ph
 
 Made by lllewik at gmail dot com
 You can do anything with this.
+
+По-русски:
+тест
