@@ -76,3 +76,7 @@ function bt()
 		';
 
 }
+
+function a($array){
+	echo hl::showArray($array);
+}

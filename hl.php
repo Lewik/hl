@@ -308,6 +308,93 @@ class hl
     ';
 	}
 
+
+	/**
+	 * @param $array
+	 * @return string
+	array(
+	'data' = $array;
+	'showNumericFields' = false;
+	'maxValueDumpLength' = 30;
+	)
+	 */
+	public static function showArray($array)
+	{
+
+		$messages = array();
+		if(array_key_exists('data',$array)){
+			$data = $array['data'];
+		} else {
+			$messages[]  = 'data key not found';
+			$data = $array;
+		}
+		if(is_object(current($data))){
+			$newData = array();
+			foreach ($data as $i => $object) {
+				$subData = array();
+				foreach ($object as $field => $value) {
+					$subData[$field] = $value;
+				}
+				$newData[$i] = $subData;
+			}
+			$data = $newData;
+		}
+		$showNumericFields = array_key_exists('showNumericFields',$array) && $array['showNumericFields'];
+		$maxValueDumpLength = array_key_exists('maxValueDumpLength',$array) ? $array['maxValueDumpLength'] : 30;
+
+
+		$tableHeader = '<tr style="font-size: 10px; font-family: Verdana;">';
+		$tableHeader .= '<th>ROWKEY</th>';
+
+		foreach (array_keys(current($data)) as $fieldName) {
+			if(!$showNumericFields && is_numeric($fieldName)){
+				continue;
+			}
+			$tableHeader .= '<th>' . $fieldName . '</th>';
+		}
+		$tableHeader .= '</tr>';
+
+		$dataRowsHtml = '';
+		foreach ($data as $rowKey => $row) {
+			$rowHtml = '<tr>';
+
+			ob_start();
+			var_dump($rowKey);
+			$valueDump = ob_get_contents();
+			ob_end_clean();
+			$valueHtml = '<th style="font-size: 10px; font-family: Verdana;">';
+			$valueHtml .= (strlen($valueDump) > $maxValueDumpLength) ? substr($valueDump,0,$maxValueDumpLength).'...' : $valueDump;
+			$valueHtml .= '</th>';
+
+			$rowHtml .= $valueHtml;
+
+			foreach ($row as $field => $value) {
+				if(!$showNumericFields && is_numeric($field)){
+					continue;
+				}
+				ob_start();
+				var_dump($value);
+				$valueDump = ob_get_contents();
+				ob_end_clean();
+				$valueHtml = '<td style="font-size: 10px; font-family: Verdana;">';
+				$valueHtml .= (strlen($valueDump) > $maxValueDumpLength) ? substr($valueDump,0,$maxValueDumpLength).'...' : $valueDump;
+				$valueHtml .= '</td>';
+
+				$rowHtml .= $valueHtml;
+			}
+			$rowHtml .= '</tr>';
+			$dataRowsHtml .= $rowHtml;
+		}
+
+		$messages = implode('<br>',$messages);
+		$html = $messages ? '<br>'.$messages.'<br>' : '';
+		$html .= '<table border="1" style="margin: 10px">';
+		$html .= $tableHeader;
+		$html .= $dataRowsHtml;
+		$html .= '</table>';
+		return $html;
+	}
+
 	protected static function setOptions()
 	{
 		static::$options['h'] = TRUE;
