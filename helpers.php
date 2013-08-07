@@ -51,23 +51,23 @@ function t($label = null, $minDelta = null)
 /**
  * echo debug_backtrace in table
  */
-function bt()
+function bt($debug_backtrace = null)
 {
-	$bt = debug_backtrace();
+	$debug_backtrace = $debug_backtrace ? : debug_backtrace();
 	echo '
-		<table>
-		<caption>hl debug backtrace<caption>
+		<table border="1">
+		<caption  style="border: 4px ridge">hl debug backtrace<caption>
 		<tr>
 			<th>call</th>
 			<th>place</th>
 		</tr>
 		';
-	unset($bt[0]);
-	foreach ($bt as $i => $data) {
+	//unset($debug_backtrace);
+	foreach ($debug_backtrace as $i => $data) {
 		echo '
 		<tr>
 			<td>' . $data['class'] . $data['type'] . $data['function'] . '</td>
-			<td>' . $data['line'] . ':' . $data['file'] . '</td>
+			<td>' . $data['file'] . ':' . $data['line'] . '</td>
 		</tr>
 		';
 	}
@@ -77,6 +77,7 @@ function bt()
 
 }
 
-function a($array){
+function a($array)
+{
 	echo hl::showArray($array);
 }
