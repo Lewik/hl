@@ -14,7 +14,7 @@
  */
 function hl()
 {
-	hl::say(func_get_args(), debug_backtrace());
+    hl::say(func_get_args(), debug_backtrace());
 }
 
 /**
@@ -22,8 +22,8 @@ function hl()
  */
 function dhl()
 {
-	hl::say(func_get_args(), debug_backtrace());
-	die();
+    hl::say(func_get_args(), debug_backtrace());
+    die();
 }
 
 /**
@@ -32,9 +32,9 @@ function dhl()
  */
 function fhl()
 {
-	$func_get_args = func_get_args();
-	array_unshift($func_get_args, '--f');
-	hl::say($func_get_args, debug_backtrace());
+    $func_get_args = func_get_args();
+    array_unshift($func_get_args, '--f');
+    hl::say($func_get_args, debug_backtrace());
 }
 
 /**
@@ -45,7 +45,7 @@ function fhl()
  */
 function t($label = null, $minDelta = null)
 {
-	return hl::tic($label, $minDelta, debug_backtrace());
+    return hl::tic($label, $minDelta, debug_backtrace());
 }
 
 /**
@@ -53,8 +53,8 @@ function t($label = null, $minDelta = null)
  */
 function bt($debug_backtrace = null)
 {
-	$debug_backtrace = $debug_backtrace ? : debug_backtrace();
-	echo '
+    $debug_backtrace = $debug_backtrace ? : debug_backtrace();
+    echo '
 		<table border="1">
 		<caption  style="border: 4px ridge">hl debug backtrace<caption>
 		<tr>
@@ -62,16 +62,16 @@ function bt($debug_backtrace = null)
 			<th>place</th>
 		</tr>
 		';
-	//unset($debug_backtrace);
-	foreach ($debug_backtrace as $i => $data) {
-		echo '
+    //unset($debug_backtrace);
+    foreach ($debug_backtrace as $i => $data) {
+        echo '
 		<tr>
 			<td>' . $data['class'] . $data['type'] . $data['function'] . '</td>
 			<td>' . $data['file'] . ':' . $data['line'] . '</td>
 		</tr>
 		';
-	}
-	echo '
+    }
+    echo '
 		</table>
 		';
 
@@ -79,5 +79,5 @@ function bt($debug_backtrace = null)
 
 function a($array)
 {
-	echo hl::showArray($array);
+    echo hl::showArray($array);
 }
