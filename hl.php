@@ -21,20 +21,24 @@ class hl
     protected static $data;
     protected static $firstStart = true;
 
-    public static function tic($label = null, $minDelta = null, $debug_backtrace)
+    public static function tic($label = null, $minDelta = null, $debug_backtrace, $echo = true)
     {
         $d_back = $debug_backtrace[0];
         $backTraceLabel = ' <small>(' . basename($d_back['file']) . ':' . $d_back['line'] . ')</small>';
         $return = null;
         if ($minDelta !== null && $minDelta != static::$minDelta) {
             static::$minDelta = $minDelta;
-            echo '<small>hl timer minimum delta set at</small> ' . static::$minDelta . '<small>secs</small>' . $backTraceLabel . '<br>';
+            if($echo){
+                echo '<small>hl timer minimum delta set at</small> ' . static::$minDelta . '<small>secs</small>' . $backTraceLabel . '<br>';
+            }
         }
 
         if (static::$prevTimer === false) {
             static::$prevTimer = microtime(true);
             static::$prevLabel = ($label === null) ? '' : (string)$label;
-            echo '<small>hl timer start at label</small> ' . static::$prevLabel . $backTraceLabel . '<br>';
+            if($echo){
+                echo '<small>hl timer start at label</small> ' . static::$prevLabel . $backTraceLabel . '<br>';
+            }
             $return = 'start';
         } else {
             $prevTime = static::$prevTimer;
@@ -45,7 +49,7 @@ class hl
 
             $realDelta = $currentTime - $prevTime;
             $delta = round($realDelta, 4);
-            if ($realDelta >= static::$minDelta) {
+            if ($echo && $realDelta >= static::$minDelta) {
                 echo '<span style="white-space: nowrap">' . $prevLabel . ' &rarr; <b>' . $delta . '</b><small>secs</small> &rarr; ' . $currentLabel . '</span><br>';
             }
             static::$prevTimer = $currentTime;
@@ -429,7 +433,7 @@ class hl
 
     protected static function isNoPre()
     {
-        return false; //ini_get('xdebug.profiler_enable') !== '';
+        return ini_get('xdebug.profiler_enable') !== '';
     }
 
     public static function setExecutionsRemain($executionsRemain)

@@ -43,9 +43,9 @@ function fhl()
  * @return mixed|string returns delta time
  * write t() in code, where you want to know process time
  */
-function t($label = null, $minDelta = null)
+function t($label = null, $minDelta = null, $echo = true)
 {
-    return hl::tic($label, $minDelta, debug_backtrace());
+    return hl::tic($label, $minDelta, debug_backtrace(), $echo);
 }
 
 /**
