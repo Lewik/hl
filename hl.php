@@ -433,7 +433,7 @@ class hl
 
     protected static function isNoPre()
     {
-        return ini_get('xdebug.profiler_enable') !== '';
+        return ini_get('xdebug.profiler_enable') != '';
     }
 
     public static function setExecutionsRemain($executionsRemain)
