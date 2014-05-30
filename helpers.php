@@ -18,6 +18,19 @@ function hl()
 }
 
 /**
+ * vardump to error log
+ * Use any php log viewer
+ */
+function ehl()
+{
+    $func_get_args = func_get_args();
+    array_unshift($func_get_args, '--e');
+    hl::say($func_get_args, debug_backtrace());
+}
+
+
+
+/**
  * hl analog. dies.
  */
 function dhl()

@@ -151,7 +151,6 @@ class hl
             $buffer = ob_get_contents();
             ob_end_clean();
 
-
             $valueToDisplay = static::isNoPre() ? $buffer : htmlspecialchars($buffer, ENT_QUOTES);
             $valueToConsole = str_replace('"', '\"', $buffer);
 
@@ -178,14 +177,20 @@ class hl
                 $d_backCall['class'] = '_undefined_class_';
             }
 
+            $d_backFuncName = $d_backCall['function'] ? $d_backCall['class'] . $d_backCall['type'] . $d_backCall['function'] : '';
+            $d_backFuncType = $d_backCall['function'] ? $callType : 'global';
             $replace = array(
                 $d_back['file'],
                 $d_back['line'],
-                $d_backCall['function'] ? $d_backCall['class'] . $d_backCall['type'] . $d_backCall['function'] : '',
-                $d_backCall['function'] ? $callType : 'global',
+                $d_backFuncName,
+                $d_backFuncType,
                 $valueToDisplay,
                 $valueToConsole,
             );
+
+            if(static::$options['e'] || static::$options['h'] || static::$options['j'] || static::$options['f']){
+                error_log('hl to er log:' . $d_back['file'].':'.$d_back['line'].' '.$d_backFuncType. ' '.$d_backFuncName.PHP_EOL.$buffer);
+            }
 
             $html = str_replace($tags, $replace, $htmlTemplate);
             $js = str_replace($tags, $replace, $jsTemplate);
@@ -277,7 +282,7 @@ class hl
                     hl
                     <span onclick="___mblHlToggle_' . $uid . '()" class="mblhlMinimize">Minimize</span>
                     <span onclick="___mblHlClose_' . $uid . '()" class="mblhlClose">Close</span>
-                    <span class="mblhlTime">' . mktime() . '</span>
+                    <span class="mblhlTime">' . time() . '</span>
                 </div>
                 <div id="___mblHlDebugBody_' . $uid . '">
                     <div class="mblhlBodyHead">
@@ -416,6 +421,7 @@ class hl
         static::$options['h'] = true;
         static::$options['j'] = true;
         static::$options['f'] = true;
+        static::$options['e'] = true;
 
         $optionFlag = '--';
 
