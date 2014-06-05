@@ -1,9 +1,9 @@
 <?php
+
 /**
  * Created by JetBrains PhpStorm.
  * User: Lewik (lllewik at gmail dot com)
  */
-
 class hl
 { //u can rename it
     protected static $prevTimer = false;
@@ -25,20 +25,24 @@ class hl
     {
         $d_back = $debug_backtrace[0];
         $backTraceLabel = ' <small>(' . basename($d_back['file']) . ':' . $d_back['line'] . ')</small>';
+        $backTraceLabelLog = ' (' . basename($d_back['file']) . ':' . $d_back['line'] . ')';
         $return = null;
         if ($minDelta !== null && $minDelta != static::$minDelta) {
             static::$minDelta = $minDelta;
-            if($echo){
-                echo '<small>hl timer minimum delta set at</small> ' . static::$minDelta . '<small>secs</small>' . $backTraceLabel . '<br>';
+            if ($echo) {
+                echo '<small>hl timer minimum delta set at</small> ' . static::$minDelta . '<small>secs</small>'
+                    . $backTraceLabel . '<br>';
             }
+            error_log('hl timer minimum delta set at' . static::$minDelta . 'secs' . $backTraceLabelLog);
         }
 
         if (static::$prevTimer === false) {
             static::$prevTimer = microtime(true);
             static::$prevLabel = ($label === null) ? '' : (string)$label;
-            if($echo){
+            if ($echo) {
                 echo '<small>hl timer start at label</small> ' . static::$prevLabel . $backTraceLabel . '<br>';
             }
+            error_log('hl timer start at label' . static::$prevLabel . 'secs' . $backTraceLabelLog);
             $return = 'start';
         } else {
             $prevTime = static::$prevTimer;
@@ -49,22 +53,19 @@ class hl
 
             $realDelta = $currentTime - $prevTime;
             $delta = round($realDelta, 4);
-            if ($echo && $realDelta >= static::$minDelta) {
-                echo '<span style="white-space: nowrap">' . $prevLabel . ' &rarr; <b>' . $delta . '</b><small>secs</small> &rarr; ' . $currentLabel . '</span><br>';
+            if ($realDelta >= static::$minDelta) {
+                if ($echo) {
+                    echo '<span style="white-space: nowrap">' . $prevLabel . ' &rarr; <b>' . $delta . '</b><small>secs</small> &rarr; ' . $currentLabel . '</span><br>';
+                }
+                error_log($prevLabel . '>' . $delta . 'secs > ' . $currentLabel);
             }
+
             static::$prevTimer = $currentTime;
             static::$prevLabel = $currentLabel;
             $return = $realDelta;
         }
 
         return $return;
-    }
-
-    protected static function initFile()
-    {
-        if (file_exists(static::$logFile)) {
-            unlink(static::$logFile);
-        }
     }
 
     public static function say($data, $debug_backtrace)
@@ -188,9 +189,11 @@ class hl
                 $valueToConsole,
             );
 
-            if(static::$options['e'] || static::$options['h'] || static::$options['j'] || static::$options['f']){
-                error_log('hl to er log:' . $d_back['file'].':'.$d_back['line'].' '.$d_backFuncType. ' '.$d_backFuncName.PHP_EOL.$buffer);
-            }
+            //In any case var_dump to error_log will be executed
+            error_log(
+                'hl to er log:' . $d_back['file'] . ':' . $d_back['line'] . ' ' . $d_backFuncType . ' ' . $d_backFuncName . PHP_EOL . $buffer
+            );
+
 
             $html = str_replace($tags, $replace, $htmlTemplate);
             $js = str_replace($tags, $replace, $jsTemplate);
@@ -219,6 +222,113 @@ class hl
         static::$firstStart = false;
 
         return true;
+    }
+
+    /**
+     * @param $array
+     * @return string
+    array(
+     * 'data' = $array;
+     * 'showNumericFields' = false;
+     * 'maxValueDumpLength' = 30;
+     * )
+     */
+    public static function showArray($array)
+    {
+
+        $messages = array();
+        if (array_key_exists('data', $array)) {
+            $data = $array['data'];
+        } else {
+            $messages[] = 'data key not found';
+            $data = $array;
+        }
+        if (is_object(current($data))) {
+            $newData = array();
+            foreach ($data as $i => $object) {
+                $subData = array();
+                foreach ($object as $field => $value) {
+                    $subData[$field] = $value;
+                }
+                $newData[$i] = $subData;
+            }
+            $data = $newData;
+        }
+        $showNumericFields = array_key_exists('showNumericFields', $array) && $array['showNumericFields'];
+        $maxValueDumpLength = array_key_exists('maxValueDumpLength', $array) ? $array['maxValueDumpLength'] : 30;
+
+
+        $tableHeader = '<tr style="font-size: 10px; font-family: Verdana;">';
+        $tableHeader .= '<th>ROWKEY</th>';
+
+        foreach (array_keys(current($data)) as $fieldName) {
+            if (!$showNumericFields && is_numeric($fieldName)) {
+                continue;
+            }
+            $tableHeader .= '<th>' . $fieldName . '</th>';
+        }
+        $tableHeader .= '</tr>';
+
+        $dataRowsHtml = '';
+        foreach ($data as $rowKey => $row) {
+            $rowHtml = '<tr>';
+
+            ob_start();
+            var_dump($rowKey);
+            $valueDump = ob_get_contents();
+            ob_end_clean();
+            $valueHtml = '<th style="font-size: 10px; font-family: Verdana;">';
+            $valueHtml .= (strlen($valueDump) > $maxValueDumpLength) ? substr(
+                    $valueDump,
+                    0,
+                    $maxValueDumpLength
+                ) . '...' : $valueDump;
+            $valueHtml .= '</th>';
+
+            $rowHtml .= $valueHtml;
+
+            foreach ($row as $field => $value) {
+                if (!$showNumericFields && is_numeric($field)) {
+                    continue;
+                }
+                ob_start();
+                var_dump($value);
+                $valueDump = ob_get_contents();
+                ob_end_clean();
+                $valueHtml = '<td style="font-size: 10px; font-family: Verdana;">';
+                $valueHtml .= (strlen($valueDump) > $maxValueDumpLength) ? substr(
+                        $valueDump,
+                        0,
+                        $maxValueDumpLength
+                    ) . '...' : $valueDump;
+                $valueHtml .= '</td>';
+
+                $rowHtml .= $valueHtml;
+            }
+            $rowHtml .= '</tr>';
+            $dataRowsHtml .= $rowHtml;
+        }
+
+        $messages = implode('<br>', $messages);
+        $html = $messages ? '<br>' . $messages . '<br>' : '';
+        $html .= '<table border="1" style="margin: 10px">';
+        $html .= $tableHeader;
+        $html .= $dataRowsHtml;
+        $html .= '</table>';
+
+        return $html;
+    }
+
+    public static function setExecutionsRemain($executionsRemain)
+    {
+        static::$executionsRemain = $executionsRemain;
+    }
+
+    protected static function initFile()
+    {
+        if (file_exists(static::$logFile)) {
+            unlink(static::$logFile);
+        }
     }
 
     protected static function hlError($text)
@@ -320,102 +430,6 @@ class hl
     ';
     }
 
-
-    /**
-     * @param $array
-     * @return string
-    array(
-    'data' = $array;
-    'showNumericFields' = false;
-    'maxValueDumpLength' = 30;
-    )
-     */
-    public static function showArray($array)
-    {
-
-        $messages = array();
-        if (array_key_exists('data', $array)) {
-            $data = $array['data'];
-        } else {
-            $messages[] = 'data key not found';
-            $data = $array;
-        }
-        if (is_object(current($data))) {
-            $newData = array();
-            foreach ($data as $i => $object) {
-                $subData = array();
-                foreach ($object as $field => $value) {
-                    $subData[$field] = $value;
-                }
-                $newData[$i] = $subData;
-            }
-            $data = $newData;
-        }
-        $showNumericFields = array_key_exists('showNumericFields', $array) && $array['showNumericFields'];
-        $maxValueDumpLength = array_key_exists('maxValueDumpLength', $array) ? $array['maxValueDumpLength'] : 30;
-
-
-        $tableHeader = '<tr style="font-size: 10px; font-family: Verdana;">';
-        $tableHeader .= '<th>ROWKEY</th>';
-
-        foreach (array_keys(current($data)) as $fieldName) {
-            if (!$showNumericFields && is_numeric($fieldName)) {
-                continue;
-            }
-            $tableHeader .= '<th>' . $fieldName . '</th>';
-        }
-        $tableHeader .= '</tr>';
-
-        $dataRowsHtml = '';
-        foreach ($data as $rowKey => $row) {
-            $rowHtml = '<tr>';
-
-            ob_start();
-            var_dump($rowKey);
-            $valueDump = ob_get_contents();
-            ob_end_clean();
-            $valueHtml = '<th style="font-size: 10px; font-family: Verdana;">';
-            $valueHtml .= (strlen($valueDump) > $maxValueDumpLength) ? substr(
-                    $valueDump,
-                    0,
-                    $maxValueDumpLength
-                ) . '...' : $valueDump;
-            $valueHtml .= '</th>';
-
-            $rowHtml .= $valueHtml;
-
-            foreach ($row as $field => $value) {
-                if (!$showNumericFields && is_numeric($field)) {
-                    continue;
-                }
-                ob_start();
-                var_dump($value);
-                $valueDump = ob_get_contents();
-                ob_end_clean();
-                $valueHtml = '<td style="font-size: 10px; font-family: Verdana;">';
-                $valueHtml .= (strlen($valueDump) > $maxValueDumpLength) ? substr(
-                        $valueDump,
-                        0,
-                        $maxValueDumpLength
-                    ) . '...' : $valueDump;
-                $valueHtml .= '</td>';
-
-                $rowHtml .= $valueHtml;
-            }
-            $rowHtml .= '</tr>';
-            $dataRowsHtml .= $rowHtml;
-        }
-
-        $messages = implode('<br>', $messages);
-        $html = $messages ? '<br>' . $messages . '<br>' : '';
-        $html .= '<table border="1" style="margin: 10px">';
-        $html .= $tableHeader;
-        $html .= $dataRowsHtml;
-        $html .= '</table>';
-
-        return $html;
-    }
-
     protected static function setOptions()
     {
         static::$options['h'] = true;
@@ -440,11 +454,6 @@ class hl
     protected static function isNoPre()
     {
         return ini_get('xdebug.profiler_enable') != '';
-    }
-
-    public static function setExecutionsRemain($executionsRemain)
-    {
-        static::$executionsRemain = $executionsRemain;
     }
 
 
