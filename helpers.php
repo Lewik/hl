@@ -5,13 +5,9 @@
  */
 
 
-/**
- * You can rename and modify all functions as you wish
- */
+/** You can rename and modify all functions as you wish */
 
-/**
- * It's colored vardump
- */
+/** It's colored vardump */
 function hl()
 {
     hl::say(func_get_args(), debug_backtrace());
@@ -29,10 +25,7 @@ function ehl()
 }
 
 
-
-/**
- * hl analog. dies.
- */
+/** hl analog. dies. */
 function dhl()
 {
     hl::say(func_get_args(), debug_backtrace());
@@ -61,13 +54,17 @@ function t($label = null, $minDelta = null, $echo = true)
     return hl::tic($label, $minDelta, debug_backtrace(), $echo);
 }
 
-/**
- * echo debug_backtrace in table
- */
-function bt($debug_backtrace = null)
+/** echo debug_backtrace in table */
+function bt($debug_backtrace = null, $echo = true)
 {
     $debug_backtrace = $debug_backtrace ? : debug_backtrace();
-    echo '
+
+    $ehl = [$debug_backtrace];
+    array_unshift($ehl, '--e');
+    hl::say($ehl, debug_backtrace());
+
+    if ($echo) {
+        echo '
 		<table border="1">
 		<caption  style="border: 4px ridge">hl debug backtrace<caption>
 		<tr>
@@ -75,22 +72,45 @@ function bt($debug_backtrace = null)
 			<th>place</th>
 		</tr>
 		';
-    //unset($debug_backtrace);
-    foreach ($debug_backtrace as $i => $data) {
-        echo '
+        //unset($debug_backtrace);
+        foreach ($debug_backtrace as $i => $data) {
+            echo '
 		<tr>
-			<td>' . $data['class'] . $data['type'] . $data['function'] . '</td>
-			<td>' . $data['file'] . ':' . $data['line'] . '</td>
+			<td>' . getDataVal($data, 'class') . getDataVal($data, 'type') . getDataVal($data, 'function') . '</td>
+			<td>' . getDataVal($data, 'file') . ':' . getDataVal($data, 'line') . '</td>
 		</tr>
 		';
-    }
-    echo '
+        }
+        echo '
 		</table>
 		';
+    }
 
 }
 
+/**
+ * @param array $data
+ * @param $key
+ * @return string
+ */
+function getDataVal(array $data, $key)
+{
+    return array_key_exists($key, $data) ? $data[$key] : '';
+}
+
+/** @param $array */
 function a($array)
 {
     echo hl::showArray($array);
+}
+
+
+/**
+ * @param $var
+ * @return int|mixed
+ *
+ * Возвращает размер памяти, занимаемый переменной
+ */
+function sov($var) {
+    return hl::sizeOfVar($var);
 }

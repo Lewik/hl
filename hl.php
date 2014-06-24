@@ -6,21 +6,41 @@
  */
 class hl
 { //u can rename it
+    /** @var bool */
     protected static $prevTimer = false;
+    /** @var bool */
     protected static $prevLabel = false;
+    /** @var int */
     protected static $minDelta = 0;
 
+    /** @var int */
     protected static $useAutoUpdate = 0;
+    /** @var int */
     protected static $executionsRemain = 10000000000;
+    /** @var string */
     protected static $logFile = 'hl_log.html';
+    /** @var int */
     protected static $top = 0;
+    /** @var int */
     protected static $topStep = 20;
+    /** @var int */
     protected static $z_indexMin = 10000;
+    /** @var int */
     protected static $z_indexMax = 11000;
+    /** @var array */
     protected static $options = array();
+    /** @var */
     protected static $data;
+    /** @var bool */
     protected static $firstStart = true;
 
+    /**
+     * @param null $label
+     * @param null $minDelta
+     * @param $debug_backtrace
+     * @param bool $echo
+     * @return mixed|null|string
+     */
     public static function tic($label = null, $minDelta = null, $debug_backtrace, $echo = true)
     {
         $d_back = $debug_backtrace[0];
@@ -68,6 +88,11 @@ class hl
         return $return;
     }
 
+    /**
+     * @param $data
+     * @param $debug_backtrace
+     * @return bool
+     */
     public static function say($data, $debug_backtrace)
     {
         if (static::$firstStart) {
@@ -224,106 +249,7 @@ class hl
         return true;
     }
 
-    /**
-     * @param $array
-     * @return string
-    array(
-     * 'data' = $array;
-     * 'showNumericFields' = false;
-     * 'maxValueDumpLength' = 30;
-     * )
-     */
-    public static function showArray($array)
-    {
-
-        $messages = array();
-        if (array_key_exists('data', $array)) {
-            $data = $array['data'];
-        } else {
-            $messages[] = 'data key not found';
-            $data = $array;
-        }
-        if (is_object(current($data))) {
-            $newData = array();
-            foreach ($data as $i => $object) {
-                $subData = array();
-                foreach ($object as $field => $value) {
-                    $subData[$field] = $value;
-                }
-                $newData[$i] = $subData;
-            }
-            $data = $newData;
-        }
-        $showNumericFields = array_key_exists('showNumericFields', $array) && $array['showNumericFields'];
-        $maxValueDumpLength = array_key_exists('maxValueDumpLength', $array) ? $array['maxValueDumpLength'] : 30;
-
-
-        $tableHeader = '<tr style="font-size: 10px; font-family: Verdana;">';
-        $tableHeader .= '<th>ROWKEY</th>';
-
-        foreach (array_keys(current($data)) as $fieldName) {
-            if (!$showNumericFields && is_numeric($fieldName)) {
-                continue;
-            }
-            $tableHeader .= '<th>' . $fieldName . '</th>';
-        }
-        $tableHeader .= '</tr>';
-
-        $dataRowsHtml = '';
-        foreach ($data as $rowKey => $row) {
-            $rowHtml = '<tr>';
-
-            ob_start();
-            var_dump($rowKey);
-            $valueDump = ob_get_contents();
-            ob_end_clean();
-            $valueHtml = '<th style="font-size: 10px; font-family: Verdana;">';
-            $valueHtml .= (strlen($valueDump) > $maxValueDumpLength) ? substr(
-                    $valueDump,
-                    0,
-                    $maxValueDumpLength
-                ) . '...' : $valueDump;
-            $valueHtml .= '</th>';
-
-            $rowHtml .= $valueHtml;
-
-            foreach ($row as $field => $value) {
-                if (!$showNumericFields && is_numeric($field)) {
-                    continue;
-                }
-                ob_start();
-                var_dump($value);
-                $valueDump = ob_get_contents();
-                ob_end_clean();
-                $valueHtml = '<td style="font-size: 10px; font-family: Verdana;">';
-                $valueHtml .= (strlen($valueDump) > $maxValueDumpLength) ? substr(
-                        $valueDump,
-                        0,
-                        $maxValueDumpLength
-                    ) . '...' : $valueDump;
-                $valueHtml .= '</td>';
-
-                $rowHtml .= $valueHtml;
-            }
-            $rowHtml .= '</tr>';
-            $dataRowsHtml .= $rowHtml;
-        }
-
-        $messages = implode('<br>', $messages);
-        $html = $messages ? '<br>' . $messages . '<br>' : '';
-        $html .= '<table border="1" style="margin: 10px">';
-        $html .= $tableHeader;
-        $html .= $dataRowsHtml;
-        $html .= '</table>';
-
-        return $html;
-    }
-
-    public static function setExecutionsRemain($executionsRemain)
-    {
-        static::$executionsRemain = $executionsRemain;
-    }
-
+    /** */
     protected static function initFile()
     {
         if (file_exists(static::$logFile)) {
@@ -331,11 +257,32 @@ class hl
         }
     }
 
-    protected static function hlError($text)
+    /** */
+    protected static function setOptions()
     {
+        static::$options['h'] = true;
+        static::$options['j'] = true;
+        static::$options['f'] = true;
+        static::$options['e'] = true;
 
+        $optionFlag = '--';
+
+
+        if (is_string(static::$data[0]) and substr(static::$data[0], 0, 2) == $optionFlag) {
+            $selectedOptions = static::$data[0];
+            unset(static::$data[0]);
+            $selectedOptions = str_replace($optionFlag, '', $selectedOptions);
+            $selectedOptions = explode(' ', $selectedOptions);
+            foreach (static::$options as $key => $enable) {
+                static::$options[$key] = !!in_array($key, $selectedOptions);
+            }
+        }
     }
 
+    /**
+     * @param bool $isFixed
+     * @return string
+     */
     protected static function getHtmlTemplate($isFixed = true)
     {
         $uid = static::$executionsRemain;
@@ -430,31 +377,128 @@ class hl
     ';
     }
 
-    protected static function setOptions()
-    {
-        static::$options['h'] = true;
-        static::$options['j'] = true;
-        static::$options['f'] = true;
-        static::$options['e'] = true;
-
-        $optionFlag = '--';
-
-
-        if (is_string(static::$data[0]) and substr(static::$data[0], 0, 2) == $optionFlag) {
-            $selectedOptions = static::$data[0];
-            unset(static::$data[0]);
-            $selectedOptions = str_replace($optionFlag, '', $selectedOptions);
-            $selectedOptions = explode(' ', $selectedOptions);
-            foreach (static::$options as $key => $enable) {
-                static::$options[$key] = !!in_array($key, $selectedOptions);
-            }
-        }
-    }
-
+    /** @return bool */
     protected static function isNoPre()
     {
         return ini_get('xdebug.profiler_enable') != '';
     }
 
+    /** @param $text */
+    protected static function hlError($text)
+    {
+
+    }
+
+    /**
+     * @param $array
+     * @return string
+     * array(
+     * 'data' = $array;
+     * 'showNumericFields' = false;
+     * 'maxValueDumpLength' = 30;
+     * )
+     */
+    public static function showArray($array)
+    {
+
+        $messages = array();
+        if (array_key_exists('data', $array)) {
+            $data = $array['data'];
+        } else {
+            $messages[] = 'data key not found';
+            $data = $array;
+        }
+        if (is_object(current($data))) {
+            $newData = array();
+            foreach ($data as $i => $object) {
+                $subData = array();
+                foreach ($object as $field => $value) {
+                    $subData[$field] = $value;
+                }
+                $newData[$i] = $subData;
+            }
+            $data = $newData;
+        }
+        $showNumericFields = array_key_exists('showNumericFields', $array) && $array['showNumericFields'];
+        $maxValueDumpLength = array_key_exists('maxValueDumpLength', $array) ? $array['maxValueDumpLength'] : 30;
+
+
+        $tableHeader = '<tr style="font-size: 10px; font-family: Verdana;">';
+        $tableHeader .= '<th>ROWKEY</th>';
+
+        foreach (array_keys(current($data)) as $fieldName) {
+            if (!$showNumericFields && is_numeric($fieldName)) {
+                continue;
+            }
+            $tableHeader .= '<th>' . $fieldName . '</th>';
+        }
+        $tableHeader .= '</tr>';
+
+        $dataRowsHtml = '';
+        foreach ($data as $rowKey => $row) {
+            $rowHtml = '<tr>';
+
+            ob_start();
+            var_dump($rowKey);
+            $valueDump = ob_get_contents();
+            ob_end_clean();
+            $valueHtml = '<th style="font-size: 10px; font-family: Verdana;">';
+            $valueHtml .= (strlen($valueDump) > $maxValueDumpLength) ? substr(
+                    $valueDump,
+                    0,
+                    $maxValueDumpLength
+                ) . '...' : $valueDump;
+            $valueHtml .= '</th>';
+
+            $rowHtml .= $valueHtml;
+
+            foreach ($row as $field => $value) {
+                if (!$showNumericFields && is_numeric($field)) {
+                    continue;
+                }
+                ob_start();
+                var_dump($value);
+                $valueDump = ob_get_contents();
+                ob_end_clean();
+                $valueHtml = '<td style="font-size: 10px; font-family: Verdana;">';
+                $valueHtml .= (strlen($valueDump) > $maxValueDumpLength) ? substr(
+                        $valueDump,
+                        0,
+                        $maxValueDumpLength
+                    ) . '...' : $valueDump;
+                $valueHtml .= '</td>';
+
+                $rowHtml .= $valueHtml;
+            }
+            $rowHtml .= '</tr>';
+            $dataRowsHtml .= $rowHtml;
+        }
+
+        $messages = implode('<br>', $messages);
+        $html = $messages ? '<br>' . $messages . '<br>' : '';
+        $html .= '<table border="1" style="margin: 10px">';
+        $html .= $tableHeader;
+        $html .= $dataRowsHtml;
+        $html .= '</table>';
+
+        return $html;
+    }
+
+    /** @param $executionsRemain */
+    public static function setExecutionsRemain($executionsRemain)
+    {
+        static::$executionsRemain = $executionsRemain;
+    }
+
+    /**
+     * @param $var
+     * @return int|mixed
+     */
+    public static function sizeOfVar($var)
+    {
+        $start_memory = memory_get_usage();
+        $tmp = unserialize(serialize($var));
+        return memory_get_usage() - $start_memory;
+    }
 
 }
