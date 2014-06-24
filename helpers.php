@@ -7,14 +7,24 @@
 
 /** You can rename and modify all functions as you wish */
 
-/** It's colored vardump */
+/** It's colored var_dump */
 function hl()
 {
     hl::say(func_get_args(), debug_backtrace());
 }
 
+/** is't var_dump, that echo value */
+function vd($variable)
+{
+    ob_start();
+    var_dump($variable);
+    $contents = ob_get_contents();
+    ob_end_clean();
+    return $contents;
+}
+
 /**
- * vardump to error log
+ * var_dump to error log
  * Use any php log viewer
  */
 function ehl()
@@ -34,7 +44,7 @@ function dhl()
 
 /**
  * hl analog, but outputs only in file
- * usefull with ajax
+ * useful with ajax
  */
 function fhl()
 {
@@ -43,11 +53,14 @@ function fhl()
     hl::say($func_get_args, debug_backtrace());
 }
 
+
 /**
- * @param null $label name of label
- * @param null $minDelta minimum delta time to echo. This value saves for other t(), no need to write it in each t()
- * @return mixed|string returns delta time
  * write t() in code, where you want to know process time
+ *
+ * @param null $label
+ * @param null $minDelta
+ * @param bool $echo
+ * @return mixed|null|string
  */
 function t($label = null, $minDelta = null, $echo = true)
 {
@@ -66,14 +79,14 @@ function bt($debug_backtrace = null, $echo = true)
     if ($echo) {
         echo '
 		<table border="1">
-		<caption  style="border: 4px ridge">hl debug backtrace<caption>
+		<caption  style="border: 4px ridge;">hl debug backtrace<caption>
 		<tr>
 			<th>call</th>
 			<th>place</th>
 		</tr>
 		';
         //unset($debug_backtrace);
-        foreach ($debug_backtrace as $i => $data) {
+        foreach ($debug_backtrace as $data) {
             echo '
 		<tr>
 			<td>' . getDataVal($data, 'class') . getDataVal($data, 'type') . getDataVal($data, 'function') . '</td>
@@ -111,6 +124,7 @@ function a($array)
  *
  * Возвращает размер памяти, занимаемый переменной
  */
-function sov($var) {
+function sov($var)
+{
     return hl::sizeOfVar($var);
 }
